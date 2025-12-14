@@ -2,10 +2,10 @@
 using IPA.AntiMalware;
 using IPA.Config;
 using IPA.Logging;
-using IPA.Utilities;
 using Mono.Cecil;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -66,7 +66,7 @@ namespace IPA.Loader
                 {
                     if (thisThreadIsInitializing)
                     {
-                        Log(Logger.Level.Warning, $"Library loader initialization recurison detected");
+                        Log(Logger.Level.Warning, "Library loader initialization recursion detected");
                         return;
                     }
                     if (FilenameLocations is not null && !force) return;
@@ -85,21 +85,19 @@ namespace IPA.Loader
                             continue;
                         }
 
-                        try
+                        var versionInfo = FileVersionInfo.GetVersionInfo(fileInfo.FullName).FileVersion;
+                        if (versionInfo == null || !Version.TryParse(versionInfo, out var fileVersion))
                         {
-                            var assemblyName = AssemblyName.GetAssemblyName(fileInfo.FullName);
-                            if (!newFilenameLocations.TryGetValue(fileInfo.Name, out var assemblyInfo) || assemblyName.Version > assemblyInfo.Version)
-                            {
-                                newFilenameLocations[fileInfo.Name] = (fileInfo.FullName, assemblyName.Version);
-                            }
-                            else
-                            {
-                                Log(Logger.Level.Notice, $"Multiple instances of {fileInfo.Name} exist! Ignoring {fileInfo.FullName}");
-                            }
+                            fileVersion = new Version(0, 0, 0, 0);
                         }
-                        catch (BadImageFormatException e)
+
+                        if (!newFilenameLocations.TryGetValue(fileInfo.Name, out var assemblyInfo) || fileVersion > assemblyInfo.Version)
                         {
-                            Log(Logger.Level.Warning, $"Exception trying to get version information for {fileInfo.FullName}: {e}");
+                            newFilenameLocations[fileInfo.Name] = (fileInfo.FullName, fileVersion);
+                        }
+                        else
+                        {
+                            Log(Logger.Level.Notice, $"Multiple instances of {fileInfo.Name} exist! Ignoring {fileInfo.FullName}");
                         }
                     }
 
