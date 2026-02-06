@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\Common.props"/>
 
@@ -20,4 +20,10 @@
 
   <Import Project="..\Common.targets"/>
 
+	<Target Name="GetTargetPath" Returns="@(_FakeOutputPath)">
+		<ItemGroup>
+			<_FakeOutputPath Include="$(MSBuildProjectDirectory)\$(PackageOutputPath)\$(AssemblyName).dll" />
+		</ItemGroup>
+	</Target>
+	
 </Project>
